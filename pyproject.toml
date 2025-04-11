@@ -1,0 +1,53 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+
+requires = [
+  "setuptools>=64",
+  "setuptools-scm[toml]>=8",
+]
+
+[project]
+name = "lob-hlpr"
+description = "Simple python based helpers for lobaro tools."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "", email = "weiss.kevin604@gmail.com" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dynamic = [ "version" ]
+
+dependencies = [
+]
+
+optional-dependencies.testing = [
+  "pytest~=8.3.4",
+  "pytest-cov~=6.0.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = [ "src" ]
+
+[tool.setuptools.package-data]
+lob_hlpr = [
+  "py.typed",
+]
+
+[tool.setuptools_scm]
+# For smarter version schemes and other configuration options,
+# check out https://github.com/pypa/setuptools_scm
+version_scheme = "no-guess-dev"
+
+[tool.pyproject-fmt]
+max_supported_python = "3.12"

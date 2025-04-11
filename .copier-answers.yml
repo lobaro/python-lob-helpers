@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier
+_commit: v0.0.2
+_src_path: ../template-python/
+author: Kevin Weiss
+author_email: weiss.kevin604@gmail.com
+copyright_date: '2025'
+description: Simple python based helpers for lobaro tools.
+has_cli: false
+module: lob_hlpr
+package: lob-hlpr
+private_deps: false
+project: helpers
+project_type: python-lob
+repo: python-lob-helpers
+short_name: hlpr
+url: https://github.com/lobaro/python-lob-helpers
