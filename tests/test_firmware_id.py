@@ -19,6 +19,17 @@ def test_valid_firmware_id_with_variants():
     assert firmware_id.built == "2024-03-11T13:57:40"
 
 
+def test_valid_firmware_id_with_origin_pass():
+    """Tests if the firmware ID can be created with 'origin' in the version string."""
+    id_str = "app-nrf91-origin+0.3.7+hw4 TZ3 (Mar  5 2025 08:36:26)"
+    firmware_id = FirmwareID(id_str)
+    assert firmware_id.name == "app-nrf91-origin"
+    assert isinstance(firmware_id.version, FirmwareVersion)
+    assert firmware_id.version.version_string == "0.3.7"
+    assert firmware_id.variants == ["hw4"]
+    assert firmware_id.built == "2025-03-05T08:36:26"
+
+
 def test_valid_firmware_id_unknown():
     """Tests if the firmware ID can be created with 'unknown' in the version string."""
     id_str = "app-nrf9160-wmbus v0.0.0-unknown+hw3 TZ2 (Oct 12 2023 10:45:49)"

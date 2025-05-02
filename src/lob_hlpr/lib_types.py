@@ -98,12 +98,27 @@ class FirmwareID:
         # Date group, matches everything inside the parentheses, made entirely optional
         r"(?:\s*\((?P<date>.+?)\))?$",
     )
+    _IDENTIFIER_RE_ORIGIN = re.compile(
+        # Name group, non-greedy match up to the first +
+        r"^(?P<name>.+?)\+"
+        # Version group, matches a semantic versioning pattern
+        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+)?(?:-\d+-g[0-9a-f]+)?)"
+        # Optional variant group, matches anything after a '+' until a space or end
+        r"(?:\+(?P<variant>[^\s]+))?"
+        # Optional additional group,
+        # matches before parentheses if not directly next to variant
+        r"(?:\s+(?P<additional>[^\(\)]+?))?"
+        # Date group, matches everything inside the parentheses, made entirely optional
+        r"(?:\s*\((?P<date>.+?)\))?$",
+    )
     """Precompiled regex for parsing all parts of a firmware identifier string."""
 
     def __post_init__(self):
         """Parses the firmware identifier string and updates attributes accordingly."""
         try:
             m = self._IDENTIFIER_RE.match(self.id_string)
+            if not m:
+                m = self._IDENTIFIER_RE_ORIGIN.match(self.id_string)
             groups = m.groupdict()
             self.name = groups["name"]
             self.version = FirmwareVersion(groups["version"])
