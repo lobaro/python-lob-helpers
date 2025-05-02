@@ -12,7 +12,7 @@ description = "Simple python based helpers for lobaro tools."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
-  { name = "", email = "weiss.kevin604@gmail.com" },
+  { name = "Kevin Weiss", email = "weiss.kevin604@gmail.com" },
 ]
 requires-python = ">=3.10"
 classifiers = [
