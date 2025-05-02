@@ -193,3 +193,21 @@ def test_format_unix_timestamp():
     timestamp = hlp.format_unix_timestamp(1732266521241)
     # Test if it is in the correct format
     assert timestamp == "2024-11-22_10-08-41" or timestamp == "2024-11-22_09-08-41"
+
+
+def test_fw_id_from_fw_file_passes():
+    """Test FirmwareID from firmware file."""
+    # Test with a valid firmware file
+    test_file = "tests/files/fw-test-file.hex"
+    res = hlp.fw_id_from_fw_file(test_file, contains="app-nrf9160-wmbus")
+    assert "app-nrf9160-wmbus" in res.name
+
+
+def test_fw_id_from_fw_file_fail():
+    """Test FirmwareID from firmware file."""
+    # Test with a valid firmware file
+    test_file = "tests/files/fw-test-file.hex"
+    with pytest.raises(ValueError):
+        hlp.fw_id_from_fw_file(test_file, contains="non-existing")
+    with pytest.raises(ValueError):
+        hlp.fw_id_from_fw_file(test_file)

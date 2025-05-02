@@ -6,6 +6,8 @@ import re
 from dataclasses import asdict
 from datetime import datetime
 
+from lob_hlpr.lib_types import FirmwareID
+
 
 class LobHlpr:
     """Helper functions for Lobaro tools."""
@@ -202,3 +204,30 @@ class LobHlpr:
         if len(identifiers) == 0:
             raise ValueError("No firmware identifier found in hexfile")
         return identifiers
+
+    @staticmethod
+    def fw_id_from_fw_file(fw_file: str, contains: str | None = None) -> FirmwareID:
+        """Extract the firmware identifier from a firmware file.
+
+        Args:
+            fw_file (str): The path to the firmware file.
+            contains (str): Optional filter to make sure result contains.
+
+        Returns:
+            FirmwareID: The firmware identifier.
+
+        Raises:
+            ValueError: If no or too many firmware identifier is found in the file.
+        """
+        with open(fw_file) as f:
+            hex_str = f.read()
+        identifiers = LobHlpr.extract_identifier_from_hexfile(hex_str)
+        if contains:
+            identifiers = [i for i in identifiers if contains in i]
+        if not identifiers:
+            raise ValueError(f"No firmware identifier found in {fw_file}")
+        if len(identifiers) > 1:
+            raise ValueError(
+                f"Multiple firmware identifiers found in {fw_file}: {identifiers}"
+            )
+        return FirmwareID(identifiers[0])
