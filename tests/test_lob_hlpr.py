@@ -28,6 +28,51 @@ def test_parse_dmc_fail():
         hlp.parse_dmc("MPP-OR023282_1")
 
 
+def test_verify_dmc_prefix_pass():
+    """Test verify_dmc_prefix function passing cases."""
+    assert (
+        hlp.verify_dmc_prefix("MPP-OR019504_1-00781", ["MPP", "SOMETHING-ELSE"])
+        == "MPP-OR019504_1-00781"
+    )
+    assert (
+        hlp.verify_dmc_prefix("MPP-M0011803L-OR024569_3-0187", ["MPP"])
+        == "MPP-M0011803L-OR024569_3-0187"
+    )
+    assert hlp.verify_dmc_prefix("MPP-OR019504_1-00781", []) == "MPP-OR019504_1-00781"
+
+
+def test_verify_dmc_prefix_fail():
+    """Test verify_dmc_prefix function failing cases."""
+    assert hlp.verify_dmc_prefix("MPP-OR019504_1-00781", ["123", "456"]) == ""
+
+
+def test_verify_dmc_customer_pass():
+    """Test verify_dmc_customer function passing cases."""
+    assert hlp.verify_dmc_customer("MPP-M0011803L-OR024569_3-0187", ["L"]) is True
+    assert hlp.verify_dmc_customer("MPP-M0011803L-OR024569_3-0187", ["B"]) is False
+    assert hlp.verify_dmc_customer("MPP-OR019504_1-00781", []) is True
+
+
+def test_verify_dmc_customer_no_sn_digit():
+    """Test verify_dmc_customer function with no digit at the end of article number."""
+    assert hlp.verify_dmc_customer("MPP-M0011803L-OR024569_3-SNNOTDIGIT", []) is False
+
+
+def test_verify_dmc_customer_no_article_number():
+    """Test verify_dmc_customer function with no article number."""
+    assert hlp.verify_dmc_customer("MPP-M0011803L_3-0187", ["L"]) is True
+
+
+def test_verify_dmc_customer_article_num_is_not_alpha():
+    """Test verify_dmc_customer function with article number not ending with letters."""
+    assert hlp.verify_dmc_customer("MPP-M0011803-OR024569_3-0187", ["L"]) is True
+
+
+def test_verify_dmc_customer_article_num_is_not_article_cust_letters():
+    """Test verify_dmc_customer with article number not having customer letters."""
+    assert hlp.verify_dmc_customer("MPP-M0011803L-OR024569_3-0187", ["X"]) is False
+
+
 # A bit of looking through a hex file and manual parsing allows me to provide
 # the following data for testing.
 HEX_STRINGS = [

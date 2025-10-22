@@ -12,6 +12,8 @@ from lob_hlpr.lib_types import FirmwareID
 class LobHlpr:
     """Helper functions for Lobaro tools."""
 
+    LOB_PRINT_LOG_PATH = None
+
     @staticmethod
     def sn_vid_pid_to_regex(
         sn: str | None = None, vid: str | None = None, pid: str | None = None
@@ -55,7 +57,7 @@ class LobHlpr:
         return f"VID:PID={vid or '.*'}:{pid or '.*'}.+SER={sn}"
 
     @staticmethod
-    def lob_print(log_path: str, *args, **kwargs):
+    def lob_print(log_path: str | None, *args, **kwargs):
         """Print to the console and log to a file.
 
         The log file is rotated when it reaches 256MB and the last two
@@ -63,6 +65,8 @@ class LobHlpr:
         only if the log handlers are set (i.e. basicConfig loglevel is Debug).
         """
         print(*args, flush=True, **kwargs)
+        if log_path is None and LobHlpr.LOB_PRINT_LOG_PATH is None:
+            return
         # get the directory from the log_path
         log_dir = os.path.dirname(log_path)
         os.makedirs(log_dir, exist_ok=True)
@@ -147,6 +151,100 @@ class LobHlpr:
         pcba_serial_number = chunks[2]
 
         return erp_prod_number, batch_number, pcba_serial_number, article_number
+
+    @staticmethod
+    def verify_dmc_prefix(dmc: str, allowed_prefixes: list[str]) -> str:
+        """Verify if the DMC starts with an allowed prefix.
+
+        If it does, cut any repeated scans
+        (e.g. MPP-OR019504_1-00781MPP-OR019504_1-00781)
+        to one DMC and return it, otherwise return an empty string.
+
+        Args:
+            dmc (str): The scanned DMC, digital manufacturer code.
+            allowed_prefixes (list[str]): List of allowed DMC prefixes.
+
+        Returns:
+            str: The (first) DMC if it starts with an allowed prefix,
+                otherwise an empty string.
+        """
+        if not allowed_prefixes:
+            # No prefixes configured, so no check needed
+            LobHlpr.lob_print(
+                LobHlpr.LOB_PRINT_LOG_PATH,
+                "No DMC prefixes configured, skipping prefix check.",
+            )
+            return dmc
+        for prefix in allowed_prefixes:
+            if dmc.startswith(prefix):
+                return dmc
+        LobHlpr.lob_print(
+            LobHlpr.LOB_PRINT_LOG_PATH,
+            f"DMC {dmc} does not start with any of the allowed prefixes: "
+            f"{allowed_prefixes}",
+        )
+        return ""
+
+    @staticmethod
+    def verify_dmc_customer(dmc: str, allowed_suffix: list[str]) -> bool:
+        """Verify if the DMC is allowed for the current customer config.
+
+        This is done by checking if the article number ends with letter(s),
+        and if customer letter(s) are configured, it must match an allowed string.
+
+        Args:
+            dmc (str): The scanned DMC, digital manufacturer code.
+            allowed_suffix (list[str]): List of allowed customer article suffixes.
+
+        Returns:
+            bool: True if the DMC is valid for the customer, False otherwise.
+        """
+        _, _, serial_no, article_no = LobHlpr.parse_dmc(dmc)
+        # serial no should be all digits,
+        # otherwise it may contain the nrf 2did as well
+        if not serial_no.isdigit():
+            LobHlpr.lob_print(
+                LobHlpr.LOB_PRINT_LOG_PATH,
+                f"Serial number {serial_no} in DMC {dmc} is not all digits!",
+            )
+            return False
+        if not allowed_suffix:
+            # No customer letters configured, so no check needed
+            LobHlpr.lob_print(
+                LobHlpr.LOB_PRINT_LOG_PATH,
+                "No customer letters configured, skipping customer check.",
+            )
+            return True
+        if not article_no:
+            # No article number to check
+            LobHlpr.lob_print(
+                LobHlpr.LOB_PRINT_LOG_PATH,
+                "No article number found in DMC, skipping customer check.",
+            )
+            return True
+        if not article_no[-1].isalpha():
+            # No letters at the end, so no customer letters to check
+            LobHlpr.lob_print(
+                LobHlpr.LOB_PRINT_LOG_PATH,
+                f"No customer letters in article number {article_no}, "
+                f"skipping customer check.",
+            )
+            return True
+        article_cust_letters = re.match(r".*([^0-9\W]+)$", article_no)
+        cust_letters = article_cust_letters.group(1)  # type: ignore[union-attr]
+        if cust_letters not in allowed_suffix:
+            LobHlpr.lob_print(
+                LobHlpr.LOB_PRINT_LOG_PATH,
+                f"Customer letters {cust_letters} in article number {article_no} "
+                f"are not allowed, must be one of {allowed_suffix}.",
+            )
+            return False
+        LobHlpr.lob_print(
+            LobHlpr.LOB_PRINT_LOG_PATH,
+            f"Customer letters {cust_letters} in article number {article_no} "
+            f"are allowed, continuing.",
+        )
+        return True
 
     @staticmethod
     def extract_identifier_from_hexfile(hex_str: str):
