@@ -67,24 +67,33 @@ class LobHlpr:
         log_dir = os.path.dirname(log_path)
         os.makedirs(log_dir, exist_ok=True)
         logger = logging.getLogger("lob_hlpr")
+        # Check to see if the file handler was already set up for root logger
+        logger.propagate = False  # Prevent propagation to root logger
         logger.setLevel(logging.INFO)
+        root_logger = logging.getLogger()
 
-        ch = logging.handlers.RotatingFileHandler(
-            log_path, maxBytes=268435456, backupCount=2
+        # Check if our file handler is already attached to root logger
+        has_file_handler = any(
+            isinstance(h, logging.handlers.RotatingFileHandler)
+            and h.baseFilename == os.path.abspath(log_path)
+            for h in root_logger.handlers
         )
 
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        if not has_file_handler:
+            ch = logging.handlers.RotatingFileHandler(
+                log_path, maxBytes=268435456, backupCount=2
+            )
 
-        ch.setFormatter(formatter)
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
 
-        # add the ch for every logger that is being used
-        for lg in logging.Logger.manager.loggerDict.values():
-            if isinstance(lg, logging.Logger) and lg.name != "lob_hlpr":
-                lg.addHandler(ch)
-        ch.setLevel(logging.INFO)
-        logger.addHandler(ch)
+            ch.setFormatter(formatter)
+
+            # Add handler to root logger so all loggers inherit it
+            root_logger.addHandler(ch)
+            logger.addHandler(ch)
+
         logger.info(*args, **kwargs)
 
     @staticmethod

@@ -137,15 +137,20 @@ def test_log_print_passes(tmp_path, capsys):
     test_logger.info("Will not show up in logs")
     test_file = tmp_path / "test.log"
     hlp.lob_print(str(test_file), "Test message")
+    hlp.lob_print(str(test_file), "Another test message")
     test_logger.info("Will show in logs after lob_print")
     captured = capsys.readouterr()
     assert "Test message" in captured.out
+    # Check that only one "Another test message" is in the output
+    assert captured.out.count("Another test message") == 1
     assert test_file.exists()
     with open(test_file) as f:
         log_content = f.read()
         assert "Test message" in log_content
         assert "Will show in logs after lob_print" in log_content
         assert "Will not show up in logs" not in log_content
+        # Check that only one "Another test message" is in the output
+        assert log_content.count("Another test message") == 1
 
 
 def test_as_clean_dict_passes():
