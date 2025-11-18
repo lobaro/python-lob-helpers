@@ -9,6 +9,38 @@ from datetime import datetime
 from lob_hlpr.lib_types import FirmwareID
 
 
+def enable_windows_ansi_support():  # pragma: no cover
+    """Try to enable ANSI escape sequence support on Windows.
+
+    Works on Windows 10+.
+    """
+    if os.name != "nt":
+        return True  # Non-Windows always supports ANSI
+
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+
+        # Enable Virtual Terminal Processing
+        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE = -11
+        mode = ctypes.c_uint32()
+        if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            new_mode = (
+                mode.value | 0x0004
+            )  # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+            if kernel32.SetConsoleMode(handle, new_mode):
+                return True
+    except Exception:
+        pass
+
+    return False
+
+
+# Determine if ANSI colors will work
+_USE_COLOR = enable_windows_ansi_support()
+
+
 class LobHlpr:
     """Helper functions for Lobaro tools."""
 
@@ -55,14 +87,50 @@ class LobHlpr:
         return f"VID:PID={vid or '.*'}:{pid or '.*'}.+SER={sn}"
 
     @staticmethod
+    def _print_color(*args, color=None, **kwargs):
+        """Print with color if supported."""
+        # ANSI color codes
+        RESET = "\033[0m"
+        RED = "\033[31m"
+        GREEN = "\033[32m"
+        YELLOW = "\033[33m"
+        if color is None or not _USE_COLOR:
+            print(*args, flush=True, **kwargs)
+            return
+        text = kwargs.get("sep", " ").join(str(a) for a in args)
+        color = color.lower()
+        code = None
+        if "red" == color:
+            code = RED
+        elif "green" == color:
+            code = GREEN
+        elif "yellow" == color:
+            code = YELLOW
+        if code is not None:
+            print(f"{code}{text}{RESET}", flush=True, **kwargs)
+        else:
+            print(text, flush=True, **kwargs)
+
+    @staticmethod
     def lob_print(log_path: str, *args, **kwargs):
         """Print to the console and log to a file.
 
         The log file is rotated when it reaches 256MB and the last two
         log files are kept. This can write all log messages to the log file
         only if the log handlers are set (i.e. basicConfig loglevel is Debug).
+
+        Args:
+            log_path: The path to the log file.
+            *args: Arguments to print.
+            **kwargs: Additional keyword arguments.
+                color (str, optional): If provided, prints the message in color
+                    to the console. Supported values are "red", "green", and "yellow".
+                    If colors are not supported by the terminal, output will be
+                    uncolored.
         """
-        print(*args, flush=True, **kwargs)
+        color = kwargs.pop("color", None)
+        LobHlpr._print_color(*args, color=color, **kwargs)
+
         # get the directory from the log_path
         log_dir = os.path.dirname(log_path)
         os.makedirs(log_dir, exist_ok=True)
