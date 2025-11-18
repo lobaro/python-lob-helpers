@@ -138,12 +138,17 @@ def test_log_print_passes(tmp_path, capsys):
     test_file = tmp_path / "test.log"
     hlp.lob_print(str(test_file), "Test message")
     hlp.lob_print(str(test_file), "Another test message")
+    hlp.lob_print(str(test_file), "red message", color="red")
+    hlp.lob_print(str(test_file), "yellow message", color="yellow")
+    hlp.lob_print(str(test_file), "green message", color="green")
+    hlp.lob_print(str(test_file), "normal message", color="doesn't matter")
     test_logger.info("Will show in logs after lob_print")
     captured = capsys.readouterr()
     assert "Test message" in captured.out
     # Check that only one "Another test message" is in the output
     assert captured.out.count("Another test message") == 1
     assert test_file.exists()
+    assert captured.out.count("red message") == 1
     with open(test_file) as f:
         log_content = f.read()
         assert "Test message" in log_content
