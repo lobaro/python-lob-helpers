@@ -162,8 +162,13 @@ def test_as_clean_dict_passes():
     """Test as_clean_dict function with valid inputs."""
 
     @dataclass
+    class MoreNestedTestClass:
+        listkey: list | None = None
+        dictkey: dict | None = None
+
+    @dataclass
     class NestedTestClass:
-        nested_key: str | None = None
+        more_nested: MoreNestedTestClass | None = None
 
     @dataclass
     class TestClass:
@@ -184,9 +189,57 @@ def test_as_clean_dict_passes():
     dclass.dictkey = {}
     dclass.boolkey = False
     dclass.nested = NestedTestClass()
+    dclass.nested.more_nested = MoreNestedTestClass(dictkey={}, listkey=[])
     assert hlp.ascleandict(dclass) == {"intkey": 0, "strkey": "", "boolkey": False}
+    assert "nested" not in hlp.ascleandict(dclass)
 
     assert hlp.ascleandict(dclass, remove_false=True) == {"intkey": 0, "strkey": ""}
+
+    @dataclass
+    class DataWithList:
+        items: list
+        name: str
+
+    data2 = DataWithList(
+        items=[{"value": 1, "empty_dict": {}}, {"value": 2, "none_val": None}, [], {}],
+        name="test",
+    )
+    result2 = hlp.ascleandict(data2)
+    assert result2 == {"name": "test", "items": [{"value": 1}, {"value": 2}]}
+
+
+def test_ascleandict_nested_cleanup_multiple_passes():
+    """Test that ascleandict removes cascading empty nested structures."""
+
+    @dataclass
+    class DeepNested:
+        value: str | None = None
+
+    @dataclass
+    class MidLevel:
+        deep: DeepNested | None = None
+        data: dict | None = None
+
+    @dataclass
+    class TopLevel:
+        mid: MidLevel | None = None
+        name: str = "test"
+
+    # Create data where cleaning cascades:
+    # - DeepNested.value = None gets removed
+    # - MidLevel.deep becomes {} and gets removed
+    # - MidLevel.data is already {} and gets removed
+    # - MidLevel itself might become {} and gets removed
+    data = TopLevel(
+        name="test",
+        mid=MidLevel(
+            deep=DeepNested(value=None),  # Becomes {}
+            data={"inner": None},  # Becomes {}
+        ),
+    )
+    result = hlp.ascleandict(data)
+    # The while loop should run multiple times, executing line 190
+    assert result == {"name": "test"}
 
 
 def test_unix_timestamp():
