@@ -26,6 +26,8 @@ def test_parse_dmc_fail():
     """Test failing branches of the parse_dmc function."""
     with pytest.raises(IndexError):
         hlp.parse_dmc("MPP-OR023282_1")
+    with pytest.raises(ValueError):
+        hlp.parse_dmc("PP-OR023282_1")
 
 
 # A bit of looking through a hex file and manual parsing allows me to provide
