@@ -260,6 +260,8 @@ class LobHlpr:
             # This: MPP-M0011554-OR019504_1-00781
             article_number = chunks.pop(1)
             # Changes to MPP-OR019504_1-00781
+        if chunks[0] != "MPP":
+            raise ValueError(f"Invalid DMC format: {dmc}, must start with MPP")
         # We want the OR019504 part
         erp_prod_number = chunks[0] + "-" + re.split("_", chunks[1])[0]
 
