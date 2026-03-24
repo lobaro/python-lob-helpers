@@ -17,35 +17,48 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TOX_VERSION: "4.24.1"
+  TOX_VERSION: "4.49.1"
+  TOX_UV_VERSION: "1.33.4"
+  UV_VERSION: "0.10.11"
   MIN_PYTHON_VERSION: "3.10"
-  MAX_PYTHON_VERSION: "3.12"
+  MAX_PYTHON_VERSION: "3.13"
 
 jobs:
+  check-commits:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # deep clone for setuptools-scm
+      - name: Prevent fixup/squash/WIP commits
+        run: |
+          BASE_SHA=$(git merge-base origin/main HEAD 2>/dev/null || git merge-base origin/master HEAD)
+          git log $BASE_SHA..HEAD --pretty=%s | grep -E '^(fixup!|squash!|WIP|wip)' && exit 1 || echo "✅ ok"
+
   prepare:
     runs-on: ubuntu-24.04
     outputs:
       wheel-distribution: ${{ steps.wheel-distribution.outputs.path }}
       VERSION: ${{ steps.get_version.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # deep clone for setuptools-scm
-      - uses: actions/setup-python@v5
-        id: setup-python
+      - uses: astral-sh/setup-uv@v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: ${{ env.MIN_PYTHON_VERSION }}
       - name: Run static analysis and format checkers
         run: >-
-          pipx run
-          --python '${{ steps.setup-python.outputs.python-path }}'
-          --spec tox==${{ env.TOX_VERSION }}
+          uv tool run
+          --from "tox==${{ env.TOX_VERSION }}"
+          --with "tox-uv==${{ env.TOX_UV_VERSION }}"
           tox -e lint
       - name: Build package distribution files
         run: >-
-          pipx run
-          --python '${{ steps.setup-python.outputs.python-path }}'
-          --spec tox==${{ env.TOX_VERSION }}
+          uv tool run
+          --from "tox==${{ env.TOX_VERSION }}"
+          --with "tox-uv==${{ env.TOX_UV_VERSION }}"
           tox -e clean,build
       - name: Record the path of wheel distribution
         id: wheel-distribution
@@ -59,7 +72,7 @@ jobs:
       - name: Store the distribution files for use in other stages
         # `tests` and `publish` will use the same pre-built distributions,
         # so we make sure to release the exact same package that was tested
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-distribution-files
           path: dist/
@@ -71,26 +84,26 @@ jobs:
       matrix:
         python:
         - "3.10"
-        - "3.12"
+        - "3.13"
         platform:
         - ubuntu-24.04
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        id: setup-python
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: ${{ matrix.python }}
       - name: Retrieve pre-built distribution files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-distribution-files
           path: dist/
       - name: Run tests
         run: >-
-          pipx run
-          --python '${{ steps.setup-python.outputs.python-path }}'
-          --spec tox==${{ env.TOX_VERSION }}
+          uv tool run
+          --from "tox==${{ env.TOX_VERSION }}"
+          --with "tox-uv==${{ env.TOX_UV_VERSION }}"
           tox --installpkg '${{ needs.prepare.outputs.wheel-distribution }}'
           -- -rFEx --durations 10 --color yes
 
