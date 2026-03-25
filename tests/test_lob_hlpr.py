@@ -265,6 +265,7 @@ def test_fw_id_from_fw_file_passes():
     # Test with a valid firmware file
     test_file = "tests/files/fw-test-file.hex"
     res = hlp.fw_id_from_fw_file(test_file, contains="app-nrf9160-wmbus")
+    assert res.name is not None
     assert "app-nrf9160-wmbus" in res.name
 
 
