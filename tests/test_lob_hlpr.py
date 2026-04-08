@@ -1,3 +1,4 @@
+import json
 import logging
 from dataclasses import dataclass
 
@@ -160,6 +161,21 @@ def test_log_print_passes(tmp_path, capsys):
         assert log_content.count("Another test message") == 1
 
 
+def test_ascleandict_rejects_non_dataclass():
+    """Test that ascleandict raises TypeError for non-dataclass inputs."""
+    with pytest.raises(TypeError):
+        hlp.ascleandict({"key": "value"})
+    with pytest.raises(TypeError):
+        hlp.ascleandict([1, 2, 3])
+    with pytest.raises(TypeError):
+        hlp.ascleandict("string")
+    with pytest.raises(TypeError):
+        hlp.ascleandict(42)
+    # Dataclass type (not instance) must also be rejected
+    with pytest.raises(TypeError):
+        hlp.ascleandict(dataclass)
+
+
 def test_as_clean_dict_passes():
     """Test as_clean_dict function with valid inputs."""
 
@@ -208,6 +224,95 @@ def test_as_clean_dict_passes():
     )
     result2 = hlp.ascleandict(data2)
     assert result2 == {"name": "test", "items": [{"value": 1}, {"value": 2}]}
+
+
+def test_ascleandict_non_picklable_field():
+    """Test that ascleandict handles non-picklable fields (e.g. thread locks).
+
+    dataclasses.asdict() calls copy.deepcopy() on non-dataclass values, which
+    fails for objects containing thread locks with:
+      TypeError: cannot pickle '_thread.lock' object
+    The custom converter must pass such values through without copying them.
+    """
+    import _thread
+    import threading
+
+    @dataclass
+    class WithLock:
+        name: str
+        lock: _thread.LockType
+
+    lock = threading.Lock()
+    data = WithLock(name="test", lock=lock)
+    result = hlp.ascleandict(data)
+
+    with pytest.raises(TypeError):
+        json.dumps(result)
+    assert result["name"] == "test"
+    assert result["lock"] is lock
+
+    result_json = hlp.ascleandict(data, json_serializable=True)
+    json.dumps(result_json)  # Should not raise TypeError
+
+
+def test_ascleandict_tuple_and_namedtuple():
+    """Test that tuple fields are returned as plain tuples, not the original subclass.
+
+    type(obj)(items) fails for namedtuples because their constructor requires
+    positional keyword arguments, not a single iterable.
+    """
+    from collections import namedtuple
+
+    Point = namedtuple("Point", ["x", "y"])
+
+    @dataclass
+    class WithTuples:
+        coords: tuple
+        point: tuple
+        name: str
+
+    data = WithTuples(coords=(1, 2, 3), point=Point(x=4, y=5), name="test")
+    result = hlp.ascleandict(data)
+    assert result["name"] == "test"
+    assert result["coords"] == (1, 2, 3)
+    assert isinstance(result["coords"], tuple)
+    # namedtuple is a tuple subclass — must come back as a plain tuple
+    assert result["point"] == (4, 5)
+    assert type(result["point"]) is tuple
+
+
+def test_ascleandict_json_serializable_non_string_keys():
+    """Test that json_serializable=True converts non-string dict keys to str.
+
+    JSON only supports string keys. A dict with e.g. integer or tuple keys
+    would raise TypeError on json.dumps even if all values are serializable.
+    """
+    import uuid
+    from datetime import datetime
+
+    @dataclass
+    class WithComplexKeys:
+        data: dict
+
+    dt_key = datetime(2026, 4, 8)
+    uuid_key = uuid.UUID("12345678-1234-5678-1234-567812345678")
+    data = WithComplexKeys(
+        data={
+            42: "int key",
+            (1, 2): "tuple key",
+            dt_key: "datetime key",
+            uuid_key: "uuid key",
+        }
+    )
+
+    result = hlp.ascleandict(data, json_serializable=True)
+    # All keys must be strings
+    assert all(isinstance(k, str) for k in result["data"])
+    assert result["data"]["42"] == "int key"
+    assert result["data"]["(1, 2)"] == "tuple key"
+    assert result["data"][str(dt_key)] == "datetime key"
+    assert result["data"][str(uuid_key)] == "uuid key"
+    json.dumps(result)  # Must not raise
 
 
 def test_ascleandict_nested_cleanup_multiple_passes():
