@@ -139,7 +139,8 @@ class LobHlpr:
 
         # get the directory from the log_path
         log_dir = os.path.dirname(log_path)
-        os.makedirs(log_dir, exist_ok=True)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
         logger = logging.getLogger("lob_hlpr")
         logger.propagate = False  # Prevent propagation to root logger
         logger.setLevel(logging.INFO)
