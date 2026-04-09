@@ -176,7 +176,8 @@ class LobHlpr:
                 logger.addHandler(ch)
 
         message = sep.join(str(a) for a in args)
-        logger.info("%s", message)
+        for line in message.splitlines() or [message]:
+            logger.info("%s", line)
 
     @staticmethod
     def ascleandict(
