@@ -135,7 +135,9 @@ class LobHlpr:
                     uncolored.
         """
         color = kwargs.pop("color", None)
-        LobHlpr._print_color(*args, color=color, **kwargs)
+        sep = kwargs.pop("sep", " ")
+        kwargs.pop("end", None)  # consumed by print, not meaningful for logging
+        LobHlpr._print_color(*args, color=color, sep=sep, **kwargs)
 
         # get the directory from the log_path
         log_dir = os.path.dirname(log_path)
@@ -173,7 +175,8 @@ class LobHlpr:
                 root_logger.addHandler(ch)
                 logger.addHandler(ch)
 
-        logger.info(*args, **kwargs)
+        message = sep.join(str(a) for a in args)
+        logger.info("%s", message)
 
     @staticmethod
     def ascleandict(
