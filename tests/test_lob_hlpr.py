@@ -164,6 +164,30 @@ def test_log_print_passes(tmp_path, capsys):
         assert log_content.count("Another test message") == 1
 
 
+def test_log_print_multiline(tmp_path, capsys):
+    """Multiline messages are split into one log record per line.
+
+    The console output must be unchanged (print handles newlines natively),
+    while the log file must contain each line as a separate entry so that
+    log parsers and grep work without special handling.
+    """
+    test_file = tmp_path / "multiline.log"
+    hlp.lob_print(str(test_file), "line one\nline two\nline three")
+
+    captured = capsys.readouterr()
+    # Console retains the original newlines via print
+    assert "line one\nline two\nline three" in captured.out
+
+    log_content = test_file.read_text()
+    # Each line is a separate log record — no embedded newlines in any record
+    log_lines = [ln for ln in log_content.splitlines() if ln.strip()]
+    assert any("line one" in ln for ln in log_lines)
+    assert any("line two" in ln for ln in log_lines)
+    assert any("line three" in ln for ln in log_lines)
+    # None of the individual log records should span multiple lines
+    assert not any("\n" in ln for ln in log_lines)
+
+
 def test_log_print_concurrent(tmp_path):
     """lob_print is safe to call from multiple threads simultaneously.
 
