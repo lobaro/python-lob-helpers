@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 import os
 import re
+import threading
 from dataclasses import fields, is_dataclass
 from datetime import datetime
 from typing import Any
@@ -41,6 +42,9 @@ def enable_windows_ansi_support():  # pragma: no cover
 
 # Determine if ANSI colors will work
 _USE_COLOR = enable_windows_ansi_support()
+
+# Lock protecting the one-time setup of rotating file handlers in lob_print
+_log_handler_lock = threading.Lock()
 
 
 class LobHlpr:
@@ -131,40 +135,49 @@ class LobHlpr:
                     uncolored.
         """
         color = kwargs.pop("color", None)
-        LobHlpr._print_color(*args, color=color, **kwargs)
+        sep = kwargs.pop("sep", " ")
+        kwargs.pop("end", None)  # consumed by print, not meaningful for logging
+        LobHlpr._print_color(*args, color=color, sep=sep, **kwargs)
 
         # get the directory from the log_path
         log_dir = os.path.dirname(log_path)
-        os.makedirs(log_dir, exist_ok=True)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
         logger = logging.getLogger("lob_hlpr")
-        # Check to see if the file handler was already set up for root logger
         logger.propagate = False  # Prevent propagation to root logger
         logger.setLevel(logging.INFO)
         root_logger = logging.getLogger()
 
-        # Check if our file handler is already attached to root logger
-        has_file_handler = any(
-            isinstance(h, logging.handlers.RotatingFileHandler)
-            and h.baseFilename == os.path.abspath(log_path)
-            for h in root_logger.handlers
-        )
-
-        if not has_file_handler:
-            ch = logging.handlers.RotatingFileHandler(
-                log_path, maxBytes=268435456, backupCount=2
+        abs_log_path = os.path.abspath(log_path)
+        with _log_handler_lock:
+            # Re-check inside the lock to avoid a TOCTOU race when multiple
+            # threads call lob_print concurrently with the same log_path.
+            has_file_handler = any(
+                isinstance(h, logging.handlers.RotatingFileHandler)
+                and h.baseFilename == abs_log_path
+                for h in root_logger.handlers
             )
 
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            if not has_file_handler:
+                ch = logging.handlers.RotatingFileHandler(
+                    log_path, maxBytes=268435456, backupCount=2
+                )
 
-            ch.setFormatter(formatter)
+                formatter = logging.Formatter(
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                )
 
-            # Add handler to root logger so all loggers inherit it
-            root_logger.addHandler(ch)
-            logger.addHandler(ch)
+                ch.setFormatter(formatter)
 
-        logger.info(*args, **kwargs)
+                # Add to root_logger so all other loggers inherit it via
+                # propagation.  Also add directly to logger because logger has
+                # propagate=False, so it would not reach root_logger otherwise.
+                root_logger.addHandler(ch)
+                logger.addHandler(ch)
+
+        message = sep.join(str(a) for a in args)
+        for line in message.splitlines() or [message]:
+            logger.info("%s", line)
 
     @staticmethod
     def ascleandict(

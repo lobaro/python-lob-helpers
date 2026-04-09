@@ -1,5 +1,8 @@
 import json
 import logging
+import logging.handlers
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 import pytest
@@ -159,6 +162,69 @@ def test_log_print_passes(tmp_path, capsys):
         assert "Will not show up in logs" not in log_content
         # Check that only one "Another test message" is in the output
         assert log_content.count("Another test message") == 1
+
+
+def test_log_print_multiline(tmp_path, capsys):
+    """Multiline messages are split into one log record per line.
+
+    The console output must be unchanged (print handles newlines natively),
+    while the log file must contain each line as a separate entry so that
+    log parsers and grep work without special handling.
+    """
+    test_file = tmp_path / "multiline.log"
+    hlp.lob_print(str(test_file), "line one\nline two\nline three")
+
+    captured = capsys.readouterr()
+    # Console retains the original newlines via print
+    assert "line one\nline two\nline three" in captured.out
+
+    log_content = test_file.read_text()
+    # Each line is a separate log record — no embedded newlines in any record
+    log_lines = [ln for ln in log_content.splitlines() if ln.strip()]
+    assert any("line one" in ln for ln in log_lines)
+    assert any("line two" in ln for ln in log_lines)
+    assert any("line three" in ln for ln in log_lines)
+    # None of the individual log records should span multiple lines
+    assert not any("\n" in ln for ln in log_lines)
+
+
+def test_log_print_concurrent(tmp_path):
+    """lob_print is safe to call from multiple threads simultaneously.
+
+    Concurrent callers sharing the same log_path must result in exactly one
+    RotatingFileHandler attached to root_logger and each message written
+    exactly once to the log file.
+    """
+    test_file = tmp_path / "concurrent.log"
+    n_threads = 20
+    barrier = threading.Barrier(n_threads)
+
+    def worker(i):
+        # All threads reach the barrier before any of them calls lob_print,
+        # maximising the chance of a real race on handler setup.
+        barrier.wait()
+        hlp.lob_print(str(test_file), f"msg-{i:04d}")
+
+    with ThreadPoolExecutor(max_workers=n_threads) as pool:
+        futures = [pool.submit(worker, i) for i in range(n_threads)]
+        for f in futures:
+            f.result()  # re-raises any exception from the thread
+
+    root_logger = logging.getLogger()
+    file_handlers = [
+        h
+        for h in root_logger.handlers
+        if isinstance(h, logging.handlers.RotatingFileHandler)
+        and h.baseFilename == str(test_file.resolve())
+    ]
+    assert len(file_handlers) == 1, (
+        f"Expected exactly 1 RotatingFileHandler, got {len(file_handlers)}"
+    )
+
+    log_content = test_file.read_text()
+    for i in range(n_threads):
+        count = log_content.count(f"msg-{i:04d}")
+        assert count == 1, f"msg-{i:04d} appeared {count} times in log (expected 1)"
 
 
 def test_ascleandict_rejects_non_dataclass():
