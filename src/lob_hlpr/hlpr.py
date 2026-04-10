@@ -213,36 +213,54 @@ class LobHlpr:
                 return False
             return True
 
-        def _convert(obj: object) -> Any:
-            if is_dataclass(obj) and not isinstance(obj, type):
-                result = {}
-                for f in fields(obj):
-                    converted = _convert(getattr(obj, f.name))
-                    if _keep(converted):
-                        result[f.name] = converted
-                return result
-            if isinstance(obj, dict):
-                result = {}
-                for k, v in obj.items():
-                    converted = _convert(v)
-                    if _keep(converted):
-                        key = (
-                            str(k)
-                            if json_serializable and not isinstance(k, str)
-                            else k
-                        )
-                        result[key] = converted
-                return result
-            if isinstance(obj, (list, tuple)):
-                items = [_convert(item) for item in obj]
-                items = [item for item in items if _keep(item)]
-                return tuple(items) if isinstance(obj, tuple) else items
-            if json_serializable:
-                try:
-                    json.dumps(obj)
-                except (TypeError, OverflowError):
-                    return str(obj)
-            return obj
+        def _convert(obj: object, _seen: set | None = None) -> Any:
+            is_container = isinstance(obj, (dict, list)) or (
+                is_dataclass(obj) and not isinstance(obj, type)
+            )
+            if is_container:
+                if _seen is None:
+                    _seen = set()
+                obj_id = id(obj)
+                if obj_id in _seen:
+                    logging.getLogger(__name__).warning(
+                        "ascleandict: circular reference detected in %s, skipping",
+                        type(obj).__name__,
+                    )
+                    return f"<circular ref: {type(obj).__name__}>"
+                _seen.add(obj_id)
+            try:
+                if is_dataclass(obj) and not isinstance(obj, type):
+                    result = {}
+                    for f in fields(obj):
+                        converted = _convert(getattr(obj, f.name), _seen)
+                        if _keep(converted):
+                            result[f.name] = converted
+                    return result
+                if isinstance(obj, dict):
+                    result = {}
+                    for k, v in obj.items():
+                        converted = _convert(v, _seen)
+                        if _keep(converted):
+                            key = (
+                                str(k)
+                                if json_serializable and not isinstance(k, str)
+                                else k
+                            )
+                            result[key] = converted
+                    return result
+                if isinstance(obj, (list, tuple)):
+                    items = [_convert(item, _seen) for item in obj]
+                    items = [item for item in items if _keep(item)]
+                    return tuple(items) if isinstance(obj, tuple) else items
+                if json_serializable:
+                    try:
+                        json.dumps(obj)
+                    except (TypeError, OverflowError):
+                        return str(obj)
+                return obj
+            finally:
+                if is_container:
+                    _seen.discard(obj_id)
 
         return _convert(dclass)
 
