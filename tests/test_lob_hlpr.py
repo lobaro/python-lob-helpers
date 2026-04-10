@@ -415,6 +415,37 @@ def test_ascleandict_nested_cleanup_multiple_passes():
     assert result == {"name": "test"}
 
 
+def test_ascleandict_circular_reference_in_list():
+    """Test that ascleandict handles a circular list reference without crashing."""
+
+    @dataclass
+    class Node:
+        items: list
+
+    circular_list: list = []
+    circular_list.append(circular_list)  # List references itself
+    node = Node(items=circular_list)
+
+    result = hlp.ascleandict(node)
+    # The circular entry is replaced with a sentinel string, not empty, so kept
+    assert result["items"] == ["<circular ref: list>"]
+
+
+def test_ascleandict_circular_reference_in_dict():
+    """Test that ascleandict handles a circular dict reference without crashing."""
+
+    @dataclass
+    class Container:
+        data: dict
+
+    circular_dict: dict = {}
+    circular_dict["self"] = circular_dict  # Dict references itself
+    container = Container(data=circular_dict)
+
+    result = hlp.ascleandict(container)
+    assert result["data"]["self"] == "<circular ref: dict>"
+
+
 def test_unix_timestamp():
     """Test unix_timestamp function."""
     timestamp = hlp.unix_timestamp()
