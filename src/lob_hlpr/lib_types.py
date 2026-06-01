@@ -29,6 +29,9 @@ class FirmwareVersion:
     commit: str | None = None
     """Commit hash associated with this version."""
 
+    pre_release: str | None = None
+    """Pre-release identifier, e.g. 'rc.2' or 'alpha.1' (semver pre-release)."""
+
     dirty: bool = False
     """Indicates if there are uncommitted changes in the source."""
 
@@ -37,6 +40,10 @@ class FirmwareVersion:
 
     _VERSION_REGEX = re.compile(
         r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)"
+        # Pre-release tag per semver (e.g. rc.2, alpha.1)
+        # excludes reserved -dirty/-unknown suffixes
+        r"(?:-(?P<pre_release>"
+        r"(?!dirty(?:-|$)|unknown(?:-|$))[a-zA-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)*))?"
         r"(?:-(?P<commits>\d+)-g(?P<commit>[0-9a-f]+))?"
         r"(?P<dirty>-dirty)?(?P<unknown>-unknown)?"
     )
@@ -54,6 +61,7 @@ class FirmwareVersion:
             self.patch = int(m.group("patch"))
             self.commits = int(m.group("commits") or 0)
             self.commit = m.group("commit")
+            self.pre_release = m.group("pre_release")
             self.dirty = bool(m.group("dirty"))
             self.unknown = bool(m.group("unknown"))
         except (AttributeError, ValueError, TypeError, IndexError, KeyError) as exc:
@@ -89,7 +97,7 @@ class FirmwareID:
         # Name group, non-greedy match up to the first space
         r"^(?P<name>.+?)\s+"
         # Version group, matches a semantic versioning pattern
-        r"v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+)?(?:-\d+-g[0-9a-f]+)?)"
+        r"v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?)"
         # Optional variant group, matches anything after a '+' until a space or end
         r"(?:\+(?P<variant>[^\s]+))?"
         # Optional additional group,
@@ -102,7 +110,7 @@ class FirmwareID:
         # Name group, non-greedy match up to the first +
         r"^(?P<name>.+?)\+"
         # Version group, matches a semantic versioning pattern
-        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+)?(?:-\d+-g[0-9a-f]+)?)"
+        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?)"
         # Optional variant group, matches anything after a '+' until a space or end
         r"(?:\+(?P<variant>[^\s]+))?"
         # Optional additional group,
