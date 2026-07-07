@@ -89,3 +89,29 @@ def test_firmware_id_with_no_name():
     id_str = " v1.2.3 (Jan 01 2021 00:00:00)"
     with pytest.raises(ValueError):
         FirmwareID(id_str)
+
+
+def test_valid_firmware_id_with_rc_version():
+    """Tests origin-style firmware ID with an rc pre-release version."""
+    id_str = "app-nrf91-origin+0.13.1-rc.2+hw4 TZ3 (May 28 2026 12:17:29)"
+    firmware_id = FirmwareID(id_str)
+    assert firmware_id.name == "app-nrf91-origin"
+    assert isinstance(firmware_id.version, FirmwareVersion)
+    assert firmware_id.version.version_string == "0.13.1-rc.2"
+    assert firmware_id.version.pre_release == "rc.2"
+    assert firmware_id.version.major == 0
+    assert firmware_id.version.minor == 13
+    assert firmware_id.version.patch == 1
+    assert firmware_id.variants == ["hw4"]
+    assert firmware_id.built == "2026-05-28T12:17:29"
+
+
+def test_valid_firmware_id_with_rc_version_and_variant():
+    """Tests standard-style firmware ID with an rc pre-release version."""
+    id_str = "app-nrf9160-wmbus v0.5.0-rc.1+hw3.alt_phy TZ2 (Jun 01 2026 08:00:00)"
+    firmware_id = FirmwareID(id_str)
+    assert firmware_id.name == "app-nrf9160-wmbus"
+    assert firmware_id.version.version_string == "0.5.0-rc.1"
+    assert firmware_id.version.pre_release == "rc.1"
+    assert firmware_id.variants == ["hw3", "alt_phy"]
+    assert firmware_id.built == "2026-06-01T08:00:00"
