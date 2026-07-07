@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.10](https://github.com/lobaro/python-lob-helpers/compare/v0.0.9...v0.0.10) (2026-07-07)
+
+
+### Features
+
+* **lib_types:** Extend fw version with prerelease ([43b4d76](https://github.com/lobaro/python-lob-helpers/commit/43b4d76d2e0f6fa077107541aaaeff08a6b50354))
+
 ### [0.0.9](https://github.com/lobaro/python-lob-helpers/compare/v0.0.8...v0.0.9) (2026-05-20)
 
 
