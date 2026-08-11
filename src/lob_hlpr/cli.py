@@ -64,6 +64,18 @@ def add_renamed_argument(
         'DEBUG'
     """
     action = parser.add_argument(*flags, **kwargs)
+    # argparse's own default for these is not None, so only forward the ones the
+    # current option actually set.
+    inherited: dict[str, Any] = {
+        name: value
+        for name, value in (
+            ("nargs", action.nargs),
+            ("const", action.const),
+            ("type", action.type),
+            ("choices", action.choices),
+        )
+        if value is not None
+    }
     old_flags = [deprecated] if isinstance(deprecated, str) else list(deprecated)
     for old_flag in old_flags:
         parser.add_argument(
@@ -74,11 +86,8 @@ def add_renamed_argument(
             # Never supply a default, that is the current option's job. Without
             # this the alias would overwrite it with None.
             default=argparse.SUPPRESS,
-            nargs=action.nargs,
-            const=action.const,
-            type=action.type,
-            choices=action.choices,
             required=False,
             help=argparse.SUPPRESS,
+            **inherited,
         )
     return action
