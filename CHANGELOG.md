@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.11](https://github.com/lobaro/python-lob-helpers/compare/v0.0.10...v0.0.11) (2026-08-11)
+
+
+### Features
+
+* **cli:** keep old flag spellings working when an option is renamed ([65a5868](https://github.com/lobaro/python-lob-helpers/commit/65a586806c923dd017bcad9227fc5f6128f79790))
+
+
+### Bug Fixes
+
+* **cli:** only forward the option settings that were actually set ([5e4fe0e](https://github.com/lobaro/python-lob-helpers/commit/5e4fe0eb5d3a866e667c94f53ac73aca78805b49))
+
 ### [0.0.10](https://github.com/lobaro/python-lob-helpers/compare/v0.0.9...v0.0.10) (2026-07-07)
 
 
