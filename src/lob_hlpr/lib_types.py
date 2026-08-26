@@ -97,7 +97,7 @@ class FirmwareID:
         # Name group, non-greedy match up to the first space
         r"^(?P<name>.+?)\s+"
         # Version group, matches a semantic versioning pattern
-        r"v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?)"
+        r"v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?(?:-dirty|-unknown)*)"
         # Optional variant group, matches anything after a '+' until a space or end
         r"(?:\+(?P<variant>[^\s]+))?"
         # Optional additional group,
@@ -110,7 +110,7 @@ class FirmwareID:
         # Name group, non-greedy match up to the first +
         r"^(?P<name>.+?)\+"
         # Version group, matches a semantic versioning pattern
-        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?)"
+        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?(?:-dirty|-unknown)*)"
         # Optional variant group, matches anything after a '+' until a space or end
         r"(?:\+(?P<variant>[^\s]+))?"
         # Optional additional group,
