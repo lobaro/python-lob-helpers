@@ -23,13 +23,16 @@ class DriverCfg:
         {'port': '/dev/ttyUSB0'}
     """
 
-    extra: dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict, kw_only=True)
     """Undocumented keyword arguments passed straight to the driver.
 
     Escape hatch for a driver option this configuration has not been taught
     yet, and for one-off debugging sessions. Nothing here is validated: an
     unknown key raises ``TypeError`` from the driver constructor, which is the
     intended feedback.
+
+    Keyword only, so a subclass can still declare a driver argument that has
+    no default.
     """
 
     def as_kwargs(self, **overrides: Any) -> dict[str, Any]:
@@ -60,6 +63,6 @@ class DriverCfg:
             f.name: getattr(self, f.name) for f in fields(self) if f.name != "extra"
         }
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        kwargs.update(self.extra)
+        kwargs.update({k: v for k, v in self.extra.items() if v is not None})
         kwargs.update({k: v for k, v in overrides.items() if v is not None})
         return kwargs

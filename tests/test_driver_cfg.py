@@ -96,3 +96,24 @@ def test_unknown_extra_key_raises_from_the_driver():
     cfg = _ExampleCfg(extra={"nonsense": 1})
     with pytest.raises(TypeError):
         _Driver(**cfg.as_kwargs())
+
+
+def test_none_in_extra_is_dropped():
+    """Extra follows the same contract, a None there is not a setting."""
+    assert "timeout" not in _ExampleCfg(extra={"timeout": None}).as_kwargs()
+
+
+def test_extra_none_does_not_unset_a_field():
+    """A None in extra leaves the declared value alone."""
+    cfg = _ExampleCfg(baudrate=9600, extra={"baudrate": None})
+    assert cfg.as_kwargs()["baudrate"] == 9600
+
+
+def test_subclass_may_declare_a_required_argument():
+    """Extra is keyword only, so it does not block a required field."""
+
+    @dataclass
+    class _RequiredCfg(DriverCfg):
+        port: str
+
+    assert _RequiredCfg("/dev/ttyUSB0").as_kwargs() == {"port": "/dev/ttyUSB0"}
