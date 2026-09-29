@@ -20,12 +20,12 @@ env:
   TOX_VERSION: "4.49.1"
   TOX_UV_VERSION: "1.33.4"
   UV_VERSION: "0.10.11"
-  MIN_PYTHON_VERSION: "3.10"
-  MAX_PYTHON_VERSION: "3.13"
+  MIN_PYTHON_VERSION: "3.11"
+  MAX_PYTHON_VERSION: "3.14"
 
 jobs:
   check-commits:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, uv]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,7 +36,7 @@ jobs:
           git log $BASE_SHA..HEAD --pretty=%s | grep -E '^(fixup!|squash!|WIP|wip)' && exit 1 || echo "✅ ok"
 
   prepare:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, uv]
     outputs:
       wheel-distribution: ${{ steps.wheel-distribution.outputs.path }}
       VERSION: ${{ steps.get_version.outputs.VERSION }}
@@ -83,10 +83,10 @@ jobs:
     strategy:
       matrix:
         python:
-        - "3.10"
-        - "3.13"
+        - "3.11"
+        - "3.14"
         platform:
-        - ubuntu-24.04
+        - [self-hosted, uv]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
@@ -110,7 +110,10 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [test, prepare]
-    runs-on: ubuntu-24.04
+    # `uv`, not `k8s`: the bare `k8s` label is also answered by the preliumtarn
+    # scale set, which runs the upstream actions-runner image and has no `zip`.
+    # Only the Lobaro-built images carry `uv`.
+    runs-on: [self-hosted, uv]
     steps:
       - name: Release
         uses: softprops/action-gh-release@v2
