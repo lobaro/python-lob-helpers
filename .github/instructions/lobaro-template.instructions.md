@@ -13,7 +13,7 @@ applyTo: "**"
 
 ## Python version
 
-Python ≥ 3.10. Always use built-in generics — `list[X]`, `dict[K, V]`, `X | None` — never `typing.List` etc.
+Python ≥ 3.11. Always use built-in generics — `list[X]`, `dict[K, V]`, `X | None` — never `typing.List` etc.
 
 ## Validation workflow
 
@@ -34,7 +34,3 @@ If lint passes but tests fail, diagnose the test failure — do not bypass check
 - Follow PEP 8 and PEP 257
 - Type-hint all public functions and methods
 - Try not to add third-party dependencies unless necessary — prefer built-in features
-
-## Agents
-
-- PR review agent: [instructions](../agents/pr-review.agent.md)
