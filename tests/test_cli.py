@@ -88,6 +88,18 @@ def test_a_flag_without_a_value_can_be_renamed():
         assert parser.parse_args(["--nogui"]).no_gui is True
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [{"required": True}, {"action": "append"}, {"action": "count"}],
+    ids=["required", "append", "count"],
+)
+def test_unsupported_options_are_rejected(kwargs):
+    """Options the alias cannot mirror fail when added, not when parsed."""
+    parser = argparse.ArgumentParser("test")
+    with pytest.raises(ValueError):
+        add_renamed_argument(parser, "--new", deprecated="--old", **kwargs)
+
+
 def test_several_old_spellings_can_be_kept_alive():
     """An option renamed twice should not need two helpers."""
     parser = argparse.ArgumentParser("test")

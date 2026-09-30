@@ -8,6 +8,10 @@ from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
+# Actions whose value DeprecatedAliasAction can store the same way. Others such
+# as append or count build on the previous value, which the alias would lose.
+_ALIASABLE_ACTIONS = (None, "store", "store_true", "store_false", "store_const")
+
 
 class DeprecatedAliasAction(argparse.Action):
     """Store a value like the option it replaces, but say it is out of date.
@@ -55,6 +59,11 @@ def add_renamed_argument(
     Returns:
         The action for the current option.
 
+    Raises:
+        ValueError: For ``required=True``, which argparse checks per spelling
+            so the old one could never satisfy it, and for actions other than
+            the store ones, such as ``append`` or ``count``.
+
     Example:
         >>> parser = argparse.ArgumentParser()
         >>> _ = add_renamed_argument(
@@ -63,6 +72,10 @@ def add_renamed_argument(
         >>> parser.parse_args(["--loglevel", "DEBUG"]).log_level
         'DEBUG'
     """
+    if kwargs.get("required"):
+        raise ValueError("A renamed option cannot be required")
+    if kwargs.get("action") not in _ALIASABLE_ACTIONS:
+        raise ValueError(f"A renamed option cannot use action={kwargs['action']!r}")
     action = parser.add_argument(*flags, **kwargs)
     # argparse's own default for these is not None, so only forward the ones the
     # current option actually set.
