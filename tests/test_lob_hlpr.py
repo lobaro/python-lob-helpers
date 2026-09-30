@@ -198,6 +198,14 @@ def test_log_print_multiline(tmp_path, capsys):
     assert not any("\n" in ln for ln in log_lines)
 
 
+@pytest.mark.parametrize("color", [None, "red"])
+def test_log_print_end(tmp_path, capsys, color):
+    """The end keyword reaches print, with and without color."""
+    test_file = tmp_path / "end.log"
+    hlp.lob_print(str(test_file), "no newline", end="", color=color)
+    assert not capsys.readouterr().out.endswith("\n")
+
+
 def test_log_print_concurrent(tmp_path):
     """lob_print is safe to call from multiple threads simultaneously.
 

@@ -136,7 +136,6 @@ class LobHlpr:
         """
         color = kwargs.pop("color", None)
         sep = kwargs.pop("sep", " ")
-        kwargs.pop("end", None)  # consumed by print, not meaningful for logging
         LobHlpr._print_color(*args, color=color, sep=sep, **kwargs)
 
         # get the directory from the log_path
