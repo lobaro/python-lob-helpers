@@ -326,6 +326,8 @@ class LobHlpr:
         segments = []
         segment = bytearray()
         segment_address = None
+        # Without a type 04 record the upper address bits are zero
+        extended_address = 0
         for idx, line in enumerate(hex_str.split("\n")):
             line = line.replace("\r", "")
             if line == "":
