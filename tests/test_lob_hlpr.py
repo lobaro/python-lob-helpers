@@ -136,6 +136,16 @@ def test_extract_identifier_no_hexinfo():
         hlp.extract_identifier_from_hexfile(hex_str)
 
 
+def test_extract_identifier_without_extended_address():
+    """Data records before any extended address record start at address 0."""
+    hex_str = "\n".join(
+        line for line in HEX_STRINGS[2].splitlines() if not line.startswith(":02000004")
+    )
+    assert hlp.extract_identifier_from_hexfile(hex_str) == [
+        "app-nrf9160-wmbus v0.23.6+hw3 TZ2 (Jan 27 2024 14:20:46)"
+    ]
+
+
 def test_log_print_passes(tmp_path, capsys):
     """Test log_print function with valid inputs."""
     test_logger = logging.getLogger("test_logger")
