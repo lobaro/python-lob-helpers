@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.12](https://github.com/lobaro/python-lob-helpers/compare/v0.0.11...v0.0.12) (2026-10-02)
+
+
+### Features
+
+* **driver_cfg:** add DriverCfg base for tool config sections ([262aeaf](https://github.com/lobaro/python-lob-helpers/commit/262aeafc066af2b6ceded1ca9882c70a5cb90a0f))
+
+
+### Bug Fixes
+
+* **cli:** reject options add_renamed_argument cannot alias ([3cfdad6](https://github.com/lobaro/python-lob-helpers/commit/3cfdad6c44c57c7c320e6a7a85a86dfa8864892e))
+* **driver_cfg:** keep extra keyword only and drop None from it ([279bc56](https://github.com/lobaro/python-lob-helpers/commit/279bc56eb1a79748ea42766473befe121d0ef477)), closes [#20](https://github.com/lobaro/python-lob-helpers/issues/20)
+* **hlpr:** parse hex files without an extended address record ([e5c3290](https://github.com/lobaro/python-lob-helpers/commit/e5c32905d4afda1e71449f4672994a449fe98482))
+* **hlpr:** pass the end keyword of lob_print to print ([83e2aa7](https://github.com/lobaro/python-lob-helpers/commit/83e2aa7ea1924d4141cd49dc43634199f70932f6))
+* parse -dirty/-unknown suffix in firmware identifiers ([903b0ad](https://github.com/lobaro/python-lob-helpers/commit/903b0adc42c906dd12e234bf011cc53c7e137326))
+
 ### [0.0.11](https://github.com/lobaro/python-lob-helpers/compare/v0.0.10...v0.0.11) (2026-08-11)
 
 
