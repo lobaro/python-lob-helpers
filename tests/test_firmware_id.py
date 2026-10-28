@@ -176,3 +176,31 @@ def test_valid_firmware_id_with_rc_version_and_variant():
     assert firmware_id.version.pre_release == "rc.1"
     assert firmware_id.variants == ["hw3", "alt_phy"]
     assert firmware_id.built == "2026-06-01T08:00:00"
+
+
+def test_valid_firmware_id_origin_with_dirty_2():
+    """Tests origin-style firmware ID with a dirty suffix after the commit hash."""
+    id_str = (
+        "app-nrf91-origin+0.14.0-200-g123d6bc-dirty+hw4.gps TZ3 (Oct 28 2026 11:21:00)"
+    )
+    firmware_id = FirmwareID(id_str)
+    assert firmware_id.name == "app-nrf91-origin"
+    assert firmware_id.version.version_string == "0.14.0-200-g123d6bc-dirty"
+    assert firmware_id.version.commits == 200
+    assert firmware_id.version.commit == "123d6bc"
+    assert firmware_id.version.dirty is True
+    assert firmware_id.variants == ["hw4", "gps"]
+    assert firmware_id.built == "2026-10-28T11:21:00"
+
+
+def test_valid_firmware_id_origin_with_prerelease():
+    """Tests origin-style firmware ID with a prerelease version."""
+    id_str = "app-nrf91-origin+0.16.0-alpha.2+hw4.repeater TZ3 (Oct 13 2026 13:25:57)"
+    firmware_id = FirmwareID(id_str)
+    assert firmware_id.name == "app-nrf91-origin"
+    assert firmware_id.version.version_string == "0.16.0-alpha.2"
+    assert firmware_id.version.commits == 0
+    assert firmware_id.version.commit is None
+    assert firmware_id.version.dirty is False
+    assert firmware_id.variants == ["hw4", "repeater"]
+    assert firmware_id.built == "2026-10-13T13:25:57"
