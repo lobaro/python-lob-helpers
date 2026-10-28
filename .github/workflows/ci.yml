@@ -25,7 +25,7 @@ env:
 
 jobs:
   check-commits:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, k8s]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,7 +36,7 @@ jobs:
           git log $BASE_SHA..HEAD --pretty=%s | grep -E '^(fixup!|squash!|WIP|wip)' && exit 1 || echo "✅ ok"
 
   prepare:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, uv]
     outputs:
       wheel-distribution: ${{ steps.wheel-distribution.outputs.path }}
       VERSION: ${{ steps.get_version.outputs.VERSION }}
@@ -86,7 +86,7 @@ jobs:
         - "3.11"
         - "3.14"
         platform:
-        - ubuntu-24.04
+        - [self-hosted, uv]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
@@ -113,7 +113,7 @@ jobs:
     # `uv`, not `k8s`: the bare `k8s` label is also answered by the preliumtarn
     # scale set, which runs the upstream actions-runner image and has no `zip`.
     # Only the Lobaro-built images carry `uv`.
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, k8s]
     steps:
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -125,7 +125,7 @@ jobs:
       Publish Python distribution to PyPI
     needs:
     - release
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, k8s]
     environment:
       name: pypi
       url: https://pypi.org/p/lob-hlpr  # Replace <package-name> with your PyPI project name
