@@ -40,11 +40,13 @@ class FirmwareVersion:
 
     _VERSION_REGEX = re.compile(
         r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)"
+        # CI build without a release tag, e.g. 0.0.0-dev-9af5b7e2
+        r"(?:-dev-(?P<dev_commit>[0-9a-f]+)(?![\w.]|-g|-\d)"
         # Pre-release tag per semver (e.g. rc.2, alpha.1)
         # excludes reserved -dirty/-unknown suffixes
-        r"(?:-(?P<pre_release>"
+        r"|(?:-(?P<pre_release>"
         r"(?!dirty(?:-|$)|unknown(?:-|$))[a-zA-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)*))?"
-        r"(?:-(?P<commits>\d+)-g(?P<commit>[0-9a-f]+))?"
+        r"(?:-(?P<commits>\d+)-g(?P<commit>[0-9a-f]+))?)"
         r"(?P<dirty>-dirty)?(?P<unknown>-unknown)?"
     )
     """Precompiled regex for parsing all parts of a version string."""
@@ -60,8 +62,9 @@ class FirmwareVersion:
             self.minor = int(m.group("minor"))
             self.patch = int(m.group("patch"))
             self.commits = int(m.group("commits") or 0)
-            self.commit = m.group("commit")
-            self.pre_release = m.group("pre_release")
+            self.commit = m.group("commit") or m.group("dev_commit")
+            dev = m.group("dev_commit") is not None
+            self.pre_release = "dev" if dev else m.group("pre_release")
             self.dirty = bool(m.group("dirty"))
             self.unknown = bool(m.group("unknown"))
         except (AttributeError, ValueError, TypeError, IndexError, KeyError) as exc:
@@ -97,7 +100,7 @@ class FirmwareID:
         # Name group, non-greedy match up to the first space
         r"^(?P<name>.+?)\s+"
         # Version group, matches a semantic versioning pattern
-        r"v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?(?:-dirty|-unknown)*)"
+        r"v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-dev-[0-9a-f]+|(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?)(?:-dirty|-unknown)*)"
         # Optional variant group, matches anything after a '+' until a space or end
         r"(?:\+(?P<variant>[^\s]+))?"
         # Optional additional group,
@@ -110,7 +113,7 @@ class FirmwareID:
         # Name group, non-greedy match up to the first +
         r"^(?P<name>.+?)\+"
         # Version group, matches a semantic versioning pattern
-        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?(?:-dirty|-unknown)*)"
+        r"(?P<version>[0-9]+(?:\.[0-9]+){2}(?:-dev-[0-9a-f]+|(?:-[\w]+(?:\.[\w]+)*)?(?:-\d+-g[0-9a-f]+)?)(?:-dirty|-unknown)*)"
         # Optional variant group, matches anything after a '+' until a space or end
         r"(?:\+(?P<variant>[^\s]+))?"
         # Optional additional group,

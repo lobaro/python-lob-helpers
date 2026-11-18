@@ -176,3 +176,23 @@ def test_valid_firmware_id_with_rc_version_and_variant():
     assert firmware_id.version.pre_release == "rc.1"
     assert firmware_id.variants == ["hw3", "alt_phy"]
     assert firmware_id.built == "2026-06-01T08:00:00"
+
+
+def test_valid_firmware_id_origin_dev_build():
+    """Tests origin-style firmware ID of a CI build without a release tag."""
+    id_str = "app-nrf91-origin+0.0.0-dev-9af5b7e2+hw4 TZ3 (Nov 18 2026 13:27:12)"
+    firmware_id = FirmwareID(id_str)
+    assert firmware_id.name == "app-nrf91-origin"
+    assert firmware_id.version.version_string == "0.0.0-dev-9af5b7e2"
+    assert firmware_id.version.pre_release == "dev"
+    assert firmware_id.version.commit == "9af5b7e2"
+    assert firmware_id.variants == ["hw4"]
+    assert firmware_id.built == "2026-11-18T13:27:12"
+
+
+def test_valid_firmware_id_dev_build():
+    """Tests a v-prefixed firmware ID of a CI build without a release tag."""
+    firmware_id = FirmwareID("app-foo v0.0.0-dev-9af5b7e2+hw3 (Nov 18 2026 13:27:12)")
+    assert firmware_id.name == "app-foo"
+    assert firmware_id.version.version_string == "0.0.0-dev-9af5b7e2"
+    assert firmware_id.variants == ["hw3"]
