@@ -106,3 +106,29 @@ def test_dirty_not_treated_as_pre_release():
     version = FirmwareVersion("1.2.3-dirty")
     assert version.dirty is True
     assert version.pre_release is None
+
+
+def test_dev_build():
+    """Test a CI build without a release tag, e.g. of a pull request."""
+    version = FirmwareVersion("0.0.0-dev-9af5b7e2")
+    assert (version.major, version.minor, version.patch) == (0, 0, 0)
+    assert version.pre_release == "dev"
+    assert version.commits == 0
+    assert version.commit == "9af5b7e2"
+    assert version.dirty is False
+    assert version.unknown is False
+
+
+def test_dev_build_dirty():
+    """Test a dirty CI build without a release tag."""
+    version = FirmwareVersion("0.0.0-dev-9af5b7e2-dirty")
+    assert version.commit == "9af5b7e2"
+    assert version.dirty is True
+
+
+def test_dev_pre_release_with_commits_is_not_a_dev_build():
+    """Ensure a pre-release named dev keeps its commit distance."""
+    version = FirmwareVersion("1.2.3-dev-12-gabcdef")
+    assert version.pre_release == "dev"
+    assert version.commits == 12
+    assert version.commit == "abcdef"
